@@ -1,2 +1,2 @@
 # tapl-rust
-Rust implementation fos TaPL (Types and Programming Language)
+Rust implementation for TaPL (Types and Programming Language)
