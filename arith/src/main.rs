@@ -1,4 +1,4 @@
-//#![feature(box_syntax)]
+#![feature(box_syntax, box_patterns)]
 
 #[derive(Clone, Debug)]
 enum Term {
@@ -11,21 +11,34 @@ enum Term {
     IsZero(Box<Term>),
 }
 
-fn isNumericVal(t: &Term) -> bool{
+fn is_numeric_val(t: &Term) -> bool {
     match t {
         Term::Zero => true,
-        Term::Succ(ref t1) => isNumericVal(t1),
-        _ => false
+        Term::Succ(ref t1) => is_numeric_val(t1),
+        _ => false,
     }
 }
-
 
 use Term::*;
 
 fn main() {
     let t = Zero;
-    println!("{:?}", isNumericVal(&t));
+    println!("{:?}", is_numeric_val(&t));
 
-    let t = Box::new(Box::new(Succ(Box::new(Succ(Box::new(Zero))))));
-    println!("{:?}", isNumericVal(&t));
+    let t = box Succ(box Succ(box Zero));
+    println!("{:?}", is_numeric_val(&t));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn is_numeric_val_test() {
+        let t = Zero;
+        assert!(is_numeric_val(&t));
+
+        let t = box Succ(box Succ(box Zero));
+        assert!(is_numeric_val(&t));
+    }
 }
