@@ -129,8 +129,8 @@ fn is_val(ctx: &Context, t: &Term) -> bool {
 fn eval1(ctx: &Context, t: &Term) -> Term {
     match t {
         App(box Abs(x, t12), box v2) if is_val(ctx, v2) => term_subst_top(v2, t12),
-        App(box v1, box t2) if is_val(ctx, v1) => App(box *v1, box eval1(ctx, t2)),
-        App(box t1, box t2) => App(box eval1(ctx, t1), box *t2),
+        App(box v1, box t2) if is_val(ctx, v1) => App(box v1.clone(), box eval1(ctx, t2)),
+        App(box t1, box t2) => App(box eval1(ctx, t1), box t2.clone()),
         _ => panic!("NoRuleApplies"),
     }
 }
