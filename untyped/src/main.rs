@@ -3,7 +3,7 @@
 
 #[derive(Clone, Debug, PartialEq)]
 enum Term {
-    Var(usize, usize),
+    Var(isize, isize),
     Abs(String, Box<Term>),
     App(Box<Term>, Box<Term>),
 }
@@ -66,11 +66,11 @@ fn pickup_freshname(ctx: &Context, x: &String) -> (Context, String) {
     }
 }
 
-fn term_shift(d: usize, t: &Term) -> Term {
+fn term_shift(d: isize, t: &Term) -> Term {
     struct Env {
-        d: usize,
+        d: isize,
     }
-    fn walk(env: &Env, c: usize, t: &Term) -> Term {
+    fn walk(env: &Env, c: isize, t: &Term) -> Term {
         match t {
             Var(x, n) => {
                 if x >= &c {
@@ -88,12 +88,12 @@ fn term_shift(d: usize, t: &Term) -> Term {
     walk(&env, 0, t)
 }
 
-fn term_subst(j: usize, s: &Term, t: &Term) -> Term {
+fn term_subst(j: isize, s: &Term, t: &Term) -> Term {
     struct Env {
-        j: usize,
+        j: isize,
         s: Term,
     }
-    fn walk(env: &Env, c: usize, t: &Term) -> Term {
+    fn walk(env: &Env, c: isize, t: &Term) -> Term {
         match t {
             Var(x, n) => {
                 if *x == env.j + c {
@@ -110,6 +110,10 @@ fn term_subst(j: usize, s: &Term, t: &Term) -> Term {
     let env = Env { j: j, s: s.clone() };
 
     walk(&env, 0, t)
+}
+
+fn term_subst_top(s: &Term, t: &Term) -> Term {
+    term_shift(-1, &term_subst(0, &term_shift(1, s), t))
 }
 
 fn main() {
