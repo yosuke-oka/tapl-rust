@@ -3,7 +3,7 @@
 
 #[derive(Clone, Debug, PartialEq)]
 enum Term {
-    Var(isize, isize),
+    Var(usize, usize),
     Abs(String, Box<Term>),
     App(Box<Term>, Box<Term>),
 }
@@ -70,13 +70,16 @@ fn term_shift(d: isize, t: &Term) -> Term {
     struct Env {
         d: isize,
     }
-    fn walk(env: &Env, c: isize, t: &Term) -> Term {
+    fn walk(env: &Env, c: usize, t: &Term) -> Term {
         match t {
             Var(x, n) => {
                 if x >= &c {
-                    Var(x + env.d, n + env.d)
+                    Var(
+                        (*x as isize + env.d) as usize,
+                        (*n as isize + env.d) as usize,
+                    )
                 } else {
-                    Var(*x, n + env.d)
+                    Var(*x, (*n as isize + env.d) as usize)
                 }
             }
             Abs(x, t1) => Abs(x.clone(), box walk(env, c + 1, t1)),
@@ -88,12 +91,12 @@ fn term_shift(d: isize, t: &Term) -> Term {
     walk(&env, 0, t)
 }
 
-fn term_subst(j: isize, s: &Term, t: &Term) -> Term {
+fn term_subst(j: usize, s: &Term, t: &Term) -> Term {
     struct Env {
-        j: isize,
+        j: usize,
         s: Term,
     }
-    fn walk(env: &Env, c: isize, t: &Term) -> Term {
+    fn walk(env: &Env, c: usize, t: &Term) -> Term {
         match t {
             Var(x, n) => {
                 if *x == env.j + c {
