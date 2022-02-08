@@ -41,7 +41,13 @@ fn print_term_inner(ctx: &Context, t: &Term) {
             print_term_inner(&new_ctx, t1);
             print!(")");
         }
-        _ => unreachable!(),
+        App(t1, t2) => {
+            print!("(");
+            print_term_inner(&ctx, t1);
+            print!(" ");
+            print_term_inner(&ctx, t2);
+            print!(")");
+        }
     }
 }
 
@@ -61,9 +67,12 @@ fn pickup_freshname(ctx: &Context, x: &String) -> (Context, String) {
 
 fn main() {
     let ctx = vec![("x".to_string(), "NameBind".to_string())];
-    let t = Var(0, 1);
-    print_term(&ctx, &t);
+    let var = Var(0, 1);
+    print_term(&ctx, &var);
 
-    let t = Abs("x".to_string(), box Var(0, 1));
-    print_term(&ctx, &t);
+    let abs = Abs("x".to_string(), box Var(0, 1));
+    print_term(&ctx, &abs);
+
+    let app = App(box abs, box var);
+    print_term(&ctx, &app);
 }
