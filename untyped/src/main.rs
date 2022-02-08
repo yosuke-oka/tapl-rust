@@ -55,12 +55,13 @@ fn print_term_inner(ctx: &Context, t: &Term) {
 fn pickup_freshname(ctx: &Context, x: &String) -> (Context, String) {
     let ret = ctx.iter().find(|(var, _)| var == x);
     match ret {
-        Some(s) => return (ctx.clone(), s.0.clone()),
+        Some(_) => {
+            return pickup_freshname(&ctx, &format!("{}'", x));
+        }
         None => {
-            let new_name = format!("{}'", x);
             let mut new_ctx = ctx.clone();
-            new_ctx.push((new_name.clone(), "NameBind".to_string()));
-            return (new_ctx, new_name);
+            new_ctx.push((x.clone(), "NameBind".to_string()));
+            return (new_ctx, x.clone());
         }
     }
 }
@@ -70,7 +71,7 @@ fn main() {
     let var = Var(0, 1);
     print_term(&ctx, &var);
 
-    let abs = Abs("x".to_string(), box Var(0, 1));
+    let abs = Abs("x".to_string(), box Var(1, 2));
     print_term(&ctx, &abs);
 
     let app = App(box abs, box var);
