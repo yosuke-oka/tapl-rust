@@ -22,33 +22,33 @@ use Term::*;
 //}
 //
 fn print_term(ctx: &Context, t: &Term) {
-    print_term_inner(&ctx, &t);
-    println!()
-}
-
-fn print_term_inner(ctx: &Context, t: &Term) {
-    match t {
-        Var(index, context_length) => {
-            if *context_length == ctx.len() {
-                print!("{}", ctx[*index].0);
-            } else {
-                panic!("bad index")
+    fn inner(ctx: &Context, t: &Term) {
+        match t {
+            Var(index, context_length) => {
+                if *context_length == ctx.len() {
+                    print!("{}", ctx[*index].0);
+                } else {
+                    panic!("bad index")
+                }
+            }
+            Abs(x, t1) => {
+                let (new_ctx, new_x) = pickup_freshname(ctx, x);
+                print!("(λ {}. ", new_x);
+                inner(&new_ctx, t1);
+                print!(")");
+            }
+            App(t1, t2) => {
+                print!("(");
+                inner(&ctx, t1);
+                print!(" ");
+                inner(&ctx, t2);
+                print!(")");
             }
         }
-        Abs(x, t1) => {
-            let (new_ctx, new_x) = pickup_freshname(ctx, x);
-            print!("(λ {}. ", new_x);
-            print_term_inner(&new_ctx, t1);
-            print!(")");
-        }
-        App(t1, t2) => {
-            print!("(");
-            print_term_inner(&ctx, t1);
-            print!(" ");
-            print_term_inner(&ctx, t2);
-            print!(")");
-        }
     }
+
+    inner(ctx, t);
+    println!();
 }
 
 // Context内に変数名が既に含まれているか判定して、かぶっていたら新しい名前をつけて返す
@@ -64,6 +64,52 @@ fn pickup_freshname(ctx: &Context, x: &String) -> (Context, String) {
             return (new_ctx, x.clone());
         }
     }
+}
+
+fn term_shift(d: usize, t: &Term) -> Term {
+    struct Env {
+        d: usize,
+    }
+    fn walk(env: &Env, c: usize, t: &Term) -> Term {
+        match t {
+            Var(x, n) => {
+                if x >= &c {
+                    Var(x + env.d, n + env.d)
+                } else {
+                    Var(*x, n + env.d)
+                }
+            }
+            Abs(x, t1) => Abs(x.clone(), box walk(env, c + 1, t1)),
+            App(t1, t2) => App(box walk(env, c, t1), box walk(env, c, t2)),
+        }
+    }
+
+    let env = Env { d: d };
+    walk(&env, 0, t)
+}
+
+fn term_subst(j: usize, s: &Term, t: &Term) -> Term {
+    struct Env {
+        j: usize,
+        s: Term,
+    }
+    fn walk(env: &Env, c: usize, t: &Term) -> Term {
+        match t {
+            Var(x, n) => {
+                if *x == env.j + c {
+                    walk(env, c, &env.s)
+                } else {
+                    Var(*x, *n)
+                }
+            }
+            Abs(x, t1) => Abs(x.clone(), box walk(env, c + 1, t1)),
+            App(t1, t2) => App(box walk(env, c, t1), box walk(env, c, t2)),
+        }
+    }
+
+    let env = Env { j: j, s: s.clone() };
+
+    walk(&env, 0, t)
 }
 
 fn main() {
