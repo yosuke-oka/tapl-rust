@@ -116,6 +116,30 @@ fn term_subst_top(s: &Term, t: &Term) -> Term {
     term_shift(-1, &term_subst(0, &term_shift(1, s), t))
 }
 
+fn is_val(ctx: &Context, t: &Term) -> bool {
+    match t {
+        Abs(_, _) => true,
+        _ => false,
+    }
+}
+
+fn eval1(ctx: &Context, t: &Term) -> Term {
+    match t {
+        App(box Abs(x, t12), box v2) if is_val(ctx, v2) => term_subst_top(v2, t12),
+        App(box v1, box t2) if is_val(ctx, v1) => App(box *v1, box eval1(ctx, t2)),
+        App(box t1, box t2) => App(box eval1(ctx, t1), box *t2),
+        _ => panic!("NoRuleApplies"),
+    }
+}
+
+fn eval(ctx: &Context, t: &Term) -> Term {
+    let mut u = t.clone();
+    while !is_val(ctx, &u) {
+        u = eval1(ctx, &u);
+    }
+    u
+}
+
 fn main() {
     let ctx = vec![("x".to_string(), "NameBind".to_string())];
     let var = Var(0, 1);
