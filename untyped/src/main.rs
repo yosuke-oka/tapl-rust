@@ -154,8 +154,21 @@ fn main() {
     let app = App(box abs, box var);
     print_term(&ctx, &app);
 
-    let var = Var(0, 1);
-    let abs = Abs("x".to_string(), box Var(1, 2));
-    let app = App(box abs, box var);
-    print_term(&ctx, &eval(&ctx, &app));
+    let ctx = vec![];
+    let tru = Abs("t".to_string(), box Abs("f".to_string(), box Var(0, 2)));
+    let fls = Abs("t".to_string(), box Abs("f".to_string(), box Var(1, 2)));
+    print_term(&ctx, &tru);
+    print_term(&ctx, &fls);
+    let and = App(
+        box Abs(
+            "b".to_string(),
+            box Abs("c".to_string(), box App(box Var(0, 2), box Var(1, 2))),
+        ),
+        box fls.clone(),
+    );
+    print_term(&ctx, &and);
+    let t = App(box App(box and.clone(), box tru.clone()), box tru.clone());
+    print_term(&ctx, &eval(&ctx, &t));
+    let t = App(box App(box and.clone(), box tru.clone()), box fls.clone());
+    print_term(&ctx, &eval(&ctx, &t));
 }
