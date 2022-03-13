@@ -8,19 +8,15 @@ enum Term {
     App(Box<Term>, Box<Term>),
 }
 
-type Binding = String;
+#[derive(Clone, Debug)]
+enum Binding {
+    NameBind,
+    VArBind(String),
+}
 type Context = Vec<(String, Binding)>;
 
 use Term::*;
 
-//impl fmt::Display for Term {
-//    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//        match self {
-//            Var()
-//        }
-//    }
-//}
-//
 fn print_term(ctx: &Context, t: &Term) {
     fn inner(ctx: &Context, t: &Term) {
         match t {
@@ -60,7 +56,7 @@ fn pickup_freshname(ctx: &Context, x: &String) -> (Context, String) {
         }
         None => {
             let mut new_ctx = ctx.clone();
-            new_ctx.push((x.clone(), "NameBind".to_string()));
+            new_ctx.push((x.clone(), Binding::NameBind));
             return (new_ctx, x.clone());
         }
     }
@@ -144,7 +140,7 @@ fn eval(ctx: &Context, t: &Term) -> Term {
 }
 
 fn main() {
-    let ctx = vec![("x".to_string(), "NameBind".to_string())];
+    let ctx = vec![("x".to_string(), Binding::NameBind)];
     let var = Var(0, 1);
     print_term(&ctx, &var);
 
