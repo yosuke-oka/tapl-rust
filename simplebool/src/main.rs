@@ -1,5 +1,5 @@
 #![feature(box_syntax, box_patterns)]
-//use std::fmt;
+use std::fmt;
 
 #[derive(Clone, Debug)]
 enum Term {
@@ -15,6 +15,15 @@ enum Term {
 enum Type {
     Arrow(Box<Type>, Box<Type>),
     Bool,
+}
+
+impl fmt::Display for Type {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Arrow(t1, t2) => write!(f, "{} -> {}", t1, t2),
+            Bool => write!(f, "Bool"),
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -229,7 +238,7 @@ fn main() {
 
     let f = Abs("b".to_string(), Bool, box True);
     print_term(&ctx, &f);
-    println!("{:?}", type_of(&ctx, &f));
+    println!("{}", type_of(&ctx, &f));
 
     // let fls = Abs(
     //     "t".to_string(),
