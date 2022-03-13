@@ -94,7 +94,7 @@ fn print_term(ctx: &Context, t: &Term) {
                 if *context_length == ctx.len() {
                     print!("{}", ctx[*index].0);
                 } else {
-                    panic!("bad index")
+                    panic!("bad index: (context, term) = ({:?}, {:?})", ctx, t);
                 }
             }
             Abs(x, t, t1) => {
@@ -110,15 +110,16 @@ fn print_term(ctx: &Context, t: &Term) {
                 inner(&ctx, t2);
                 print!(")");
             }
-            True => print!("True"),
-            False => print!("False"),
+            True => print!("true"),
+            False => print!("false"),
             If(t1, t2, t3) => {
-                print!("If ");
+                print!("(if ");
                 inner(&ctx, t1);
                 print!(" then ");
                 inner(&ctx, t2);
                 print!(" else ");
                 inner(&ctx, t3);
+                print!(")");
             }
         }
     }
@@ -212,6 +213,8 @@ fn term_subst_top(s: &Term, t: &Term) -> Term {
 fn is_val(_ctx: &Context, t: &Term) -> bool {
     match t {
         Abs(_, _, _) => true,
+        True => true,
+        False => true,
         _ => false,
     }
 }
@@ -221,6 +224,9 @@ fn eval1(ctx: &Context, t: &Term) -> Term {
         App(box Abs(_x, _, t12), box v2) if is_val(ctx, v2) => term_subst_top(v2, t12),
         App(box v1, box t2) if is_val(ctx, v1) => App(box v1.clone(), box eval1(ctx, t2)),
         App(box t1, box t2) => App(box eval1(ctx, t1), box t2.clone()),
+        If(box True, t2, _t3) => *t2.clone(),
+        If(box False, _t2, t3) => *t3.clone(),
+        If(box t1, t2, t3) => If(box eval1(ctx, &t1), t2.clone(), t3.clone()),
         _ => panic!("NoRuleApplies"),
     }
 }
@@ -236,32 +242,39 @@ fn eval(ctx: &Context, t: &Term) -> Term {
 fn main() {
     let ctx = vec![];
 
-    let f = Abs("b".to_string(), Bool, box True);
+    let f = Abs(
+        "b".to_string(),
+        Bool,
+        box If(box Var(0, 1), box True, box False),
+    );
     print_term(&ctx, &f);
     println!("{}", type_of(&ctx, &f));
 
-    // let fls = Abs(
-    //     "t".to_string(),
-    //     Arrow(box Bool, box Bool),
-    //     box Abs("f".to_string(), Bool, box Var(1, 2)),
-    // );
-    // print_term(&ctx, &tru);
-    // print_term(&ctx, &fls);
-    // let and = App(
-    //     box Abs(
-    //         "b".to_string(),
-    //         Arrow(box Bool, box Arrow(box Bool, box Bool)),
-    //         box Abs(
-    //             "c".to_string(),
-    //             Arrow(box Bool, box Bool),
-    //             box App(box Var(0, 2), box Var(1, 2)),
-    //         ),
-    //     ),
-    //     box fls.clone(),
-    // );
-    // print_term(&ctx, &and);
-    // let t = App(box App(box and.clone(), box tru.clone()), box tru.clone());
-    // print_term(&ctx, &eval(&ctx, &t));
-    // let t = App(box App(box and.clone(), box tru.clone()), box fls.clone());
-    // println!("{:?}", &type_of(&ctx, &t));
+    let t1 = App(box f.clone(), box If(box False, box True, box False));
+    print_term(&ctx, &t1);
+    println!("{}", type_of(&ctx, &t1));
+
+    let ret = eval(&ctx, &t1);
+    print_term(&ctx, &ret);
+    println!("{}", type_of(&ctx, &ret));
+
+    let t2 = Abs(
+        "x".to_string(),
+        Bool,
+        box App(
+            box Abs(
+                "b".to_string(),
+                Bool,
+                box If(box Var(1, 2), box True, box False),
+            ),
+            box If(box Var(0, 1), box False, box Var(0, 1)),
+        ),
+    );
+    print_term(&ctx, &t2);
+    println!("{}", type_of(&ctx, &t2));
+
+    let t = App(box t2.clone(), box False);
+    let ret = eval(&ctx, &t);
+    print_term(&ctx, &ret);
+    println!("{}", type_of(&ctx, &ret));
 }
