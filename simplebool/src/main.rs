@@ -9,13 +9,33 @@ enum Term {
 }
 
 #[derive(Clone, Debug)]
+enum Type {
+    Arrow(Box<Type>, Box<Type>),
+    Bool,
+}
+
+#[derive(Clone, Debug)]
 enum Binding {
     NameBind,
-    VArBind(String),
+    VarBind(Type),
 }
 type Context = Vec<(String, Binding)>;
 
+use Binding::*;
 use Term::*;
+
+fn add_binding(ctx: &Context, x: &String, bind: Binding) -> Context {
+    let mut new_ctx = ctx.clone();
+    new_ctx.insert(0, (x.clone(), bind));
+    new_ctx
+}
+
+fn get_type_from_context(ctx: &Context, i: usize) -> Type {
+    match &ctx[i] {
+        (_, VarBind(ty)) => ty.clone(),
+        _ => panic!("get_type_from_context: Wrong kind of binding for variable"),
+    }
+}
 
 fn print_term(ctx: &Context, t: &Term) {
     fn inner(ctx: &Context, t: &Term) {
@@ -56,7 +76,7 @@ fn pickup_freshname(ctx: &Context, x: &String) -> (Context, String) {
         }
         None => {
             let mut new_ctx = ctx.clone();
-            new_ctx.push((x.clone(), Binding::NameBind));
+            new_ctx.push((x.clone(), NameBind));
             return (new_ctx, x.clone());
         }
     }
@@ -140,7 +160,7 @@ fn eval(ctx: &Context, t: &Term) -> Term {
 }
 
 fn main() {
-    let ctx = vec![("x".to_string(), Binding::NameBind)];
+    let ctx = vec![("x".to_string(), NameBind)];
     let var = Var(0, 1);
     print_term(&ctx, &var);
 
