@@ -11,7 +11,7 @@ enum Term {
     If(Box<Term>, Box<Term>, Box<Term>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 enum Type {
     Arrow(Box<Type>, Box<Type>),
     Bool,
@@ -41,6 +41,43 @@ fn get_type_from_context(ctx: &Context, i: usize) -> Type {
     }
 }
 
+fn type_of(ctx: &Context, t: &Term) -> Type {
+    match t {
+        Var(i, _) => get_type_from_context(ctx, *i),
+        Abs(x, ty_t1, t2) => {
+            let new_ctx = add_binding(ctx, x, VarBind(ty_t1.clone()));
+            let ty_t2 = type_of(&new_ctx, t2);
+            Arrow(box ty_t1.clone(), box ty_t2)
+        }
+        App(t1, t2) => {
+            let ty_t1 = type_of(ctx, t1);
+            let ty_t2 = type_of(ctx, t2);
+            match ty_t1 {
+                Arrow(ty_t11, ty_t12) => {
+                    if ty_t2 == *ty_t11 {
+                        *ty_t12
+                    } else {
+                        panic!("parameter type mismatch")
+                    }
+                }
+                _ => panic!("arrow type expected"),
+            }
+        }
+        True => Bool,
+        False => Bool,
+        If(t1, t2, t3) => {
+            if type_of(ctx, t1) != Bool {
+                panic!("guard of conditional not a boolean");
+            }
+            let ty_t2 = type_of(ctx, t2);
+            if ty_t2 != type_of(ctx, t3) {
+                panic!("arms of conditional have different type")
+            }
+            ty_t2
+        }
+    }
+}
+
 fn print_term(ctx: &Context, t: &Term) {
     fn inner(ctx: &Context, t: &Term) {
         match t {
@@ -64,8 +101,8 @@ fn print_term(ctx: &Context, t: &Term) {
                 inner(&ctx, t2);
                 print!(")");
             }
-            True => println!("True"),
-            False => println!("False"),
+            True => print!("True"),
+            False => print!("False"),
             If(t1, t2, t3) => {
                 print!("If ");
                 inner(&ctx, t1);
@@ -189,29 +226,33 @@ fn eval(ctx: &Context, t: &Term) -> Term {
 
 fn main() {
     let ctx = vec![];
-    let tru = Abs(
-        "t".to_string(),
-        Bool,
-        box Abs("f".to_string(), Bool, box Var(0, 2)),
-    );
-    let fls = Abs(
-        "t".to_string(),
-        Bool,
-        box Abs("f".to_string(), Bool, box Var(1, 2)),
-    );
-    print_term(&ctx, &tru);
-    print_term(&ctx, &fls);
-    let and = App(
-        box Abs(
-            "b".to_string(),
-            Bool,
-            box Abs("c".to_string(), Bool, box App(box Var(0, 2), box Var(1, 2))),
-        ),
-        box fls.clone(),
-    );
-    print_term(&ctx, &and);
-    let t = App(box App(box and.clone(), box tru.clone()), box tru.clone());
-    print_term(&ctx, &eval(&ctx, &t));
-    let t = App(box App(box and.clone(), box tru.clone()), box fls.clone());
-    print_term(&ctx, &eval(&ctx, &t));
+
+    let f = Abs("b".to_string(), Bool, box True);
+    print_term(&ctx, &f);
+    println!("{:?}", type_of(&ctx, &f));
+
+    // let fls = Abs(
+    //     "t".to_string(),
+    //     Arrow(box Bool, box Bool),
+    //     box Abs("f".to_string(), Bool, box Var(1, 2)),
+    // );
+    // print_term(&ctx, &tru);
+    // print_term(&ctx, &fls);
+    // let and = App(
+    //     box Abs(
+    //         "b".to_string(),
+    //         Arrow(box Bool, box Arrow(box Bool, box Bool)),
+    //         box Abs(
+    //             "c".to_string(),
+    //             Arrow(box Bool, box Bool),
+    //             box App(box Var(0, 2), box Var(1, 2)),
+    //         ),
+    //     ),
+    //     box fls.clone(),
+    // );
+    // print_term(&ctx, &and);
+    // let t = App(box App(box and.clone(), box tru.clone()), box tru.clone());
+    // print_term(&ctx, &eval(&ctx, &t));
+    // let t = App(box App(box and.clone(), box tru.clone()), box fls.clone());
+    // println!("{:?}", &type_of(&ctx, &t));
 }
