@@ -119,7 +119,7 @@ fn term_subst_top(s: &Term, t: &Term) -> Term {
     term_shift(-1, &term_subst(0, &term_shift(1, s), t))
 }
 
-fn is_val(ctx: &Context, t: &Term) -> bool {
+fn is_val(_ctx: &Context, t: &Term) -> bool {
     match t {
         Abs(_, _) => true,
         _ => false,
@@ -128,7 +128,7 @@ fn is_val(ctx: &Context, t: &Term) -> bool {
 
 fn eval1(ctx: &Context, t: &Term) -> Term {
     match t {
-        App(box Abs(x, t12), box v2) if is_val(ctx, v2) => term_subst_top(v2, t12),
+        App(box Abs(_x, t12), box v2) if is_val(ctx, v2) => term_subst_top(v2, t12),
         App(box v1, box t2) if is_val(ctx, v1) => App(box v1.clone(), box eval1(ctx, t2)),
         App(box t1, box t2) => App(box eval1(ctx, t1), box t2.clone()),
         _ => panic!("NoRuleApplies"),
@@ -153,4 +153,9 @@ fn main() {
 
     let app = App(box abs, box var);
     print_term(&ctx, &app);
+
+    let var = Var(0, 1);
+    let abs = Abs("x".to_string(), box Var(1, 2));
+    let app = App(box abs, box var);
+    print_term(&ctx, &eval(&ctx, &app));
 }
