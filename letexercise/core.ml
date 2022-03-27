@@ -14,7 +14,11 @@ let rec isval ctx t = match t with
 exception NoRuleApplies
 
 let rec eval1 ctx t = match t with
-    (* Insert case(s) for TmLet here *) _ -> assert false
+  | TmLet(fi, x, t1, t2) when isval ctx t1 ->
+      termSubstTop t1 t2
+  | TmLet(fi, x, t1, t2) ->
+      let t1' = eval1 ctx t1 in
+      TmLet(fi, x, t1', t2)
   | TmIf(_,TmTrue(_),t2,t3) ->
       t2
   | TmIf(_,TmFalse(_),t2,t3) ->
@@ -43,7 +47,10 @@ let rec eval ctx t =
 let rec typeof ctx t =
   match t with
     TmVar(fi,i,_) -> getTypeFromContext fi ctx i
-  | (* Insert case(s) for TmLet here *) _ -> assert false
+  | TmLet(fi, x, t1, t2) ->
+      let tyT1 = typeof ctx t1 in
+      let ctx' = addbinding ctx x (VarBind(tyT1)) in
+      (typeof ctx' t2)
   | TmTrue(fi) -> 
       TyBool
   | TmFalse(fi) -> 
